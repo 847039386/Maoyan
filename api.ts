@@ -13,7 +13,7 @@ class MaoYan {
     }
     async start(){
         this.dealDate.getDaysData();
-        this.getListDate(this.dealDate.cur_reptile_dates.currentDates)
+        await this.getListDate(this.dealDate.cur_reptile_dates.currentDates)
         //以下循环 ，暂且搁置  华丽分割线 ---------------------------------------------------------
         this.dealDate.changeTime();
         let over = this.dealDate.isOver();
@@ -48,15 +48,17 @@ class MaoYan {
     async resolveList(list : any[]){
         for(let i=0; i<list.length; i++){
             let content = await this.resolveDetail(list[i]);
-            console.log(content)
+
         }
     }
     async resolveDetail(id : number){
-        let name ,randay ,total_bo ,week_bo ,day_bo ,url ,res ,$
+        let name ,randay ,maoyan_score,total_bo ,week_bo ,day_bo ,url ,res ,$
         url = this.reptile_url + "movie/"+ id +"?_v_=yes"
         res = await agent("GET",url);
         $ = cheerio.load(res.text);
         name = $(".info-detail .info-title").text();
+        maoyan_score = $("p.score-num ").text();
+        console.log(name,maoyan_score)
         return name;
     }
 

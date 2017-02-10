@@ -18,7 +18,7 @@ class MaoYan {
     start() {
         return __awaiter(this, void 0, void 0, function* () {
             this.dealDate.getDaysData();
-            this.getListDate(this.dealDate.cur_reptile_dates.currentDates);
+            yield this.getListDate(this.dealDate.cur_reptile_dates.currentDates);
             //以下循环 ，暂且搁置  华丽分割线 ---------------------------------------------------------
             this.dealDate.changeTime();
             let over = this.dealDate.isOver();
@@ -56,17 +56,18 @@ class MaoYan {
         return __awaiter(this, void 0, void 0, function* () {
             for (let i = 0; i < list.length; i++) {
                 let content = yield this.resolveDetail(list[i]);
-                console.log(content);
             }
         });
     }
     resolveDetail(id) {
         return __awaiter(this, void 0, void 0, function* () {
-            let name, randay, total_bo, week_bo, day_bo, url, res, $;
+            let name, randay, maoyan_score, total_bo, week_bo, day_bo, url, res, $;
             url = this.reptile_url + "movie/" + id + "?_v_=yes";
             res = yield agent("GET", url);
             $ = cheerio.load(res.text);
             name = $(".info-detail .info-title").text();
+            maoyan_score = $("p.score-num ").text();
+            console.log(name, maoyan_score);
             return name;
         });
     }
