@@ -109,9 +109,11 @@ class MaoYan {
                 console.log("读取字体库");
                 resolve(data);
             }, () => __awaiter(this, void 0, void 0, function* () {
-                var a = yield this.downFile(filename);
-                console.log("下载完成", a);
-                yield this.clTts(filename, str);
+                yield this.downFile(filename);
+                console.log("下载完成 --------------------->>>>>>>>>");
+                fs.readFile("./bin/font/" + filename, { encoding: 'utf-8' }, (err, data) => {
+                    resolve(this.anaTts(str, data));
+                });
             }));
         }));
     }

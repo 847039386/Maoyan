@@ -100,10 +100,16 @@ class MaoYan {
                 console.log("读取字体库")
                 resolve(data)
             },async () => {
-                var a = await this.downFile(filename)
-                console.log("下载完成",a)
-                await this.clTts(filename,str)
+                await this.downFile(filename)
+                console.log("下载完成 --------------------->>>>>>>>>")
+                fs.readFile("./bin/font/"+ filename,{ encoding: 'utf-8' } ,(err,data) => {
+                    resolve(this.anaTts(str,data))
+                })
             })
+
+
+
+
         })
     }
     async test(){
