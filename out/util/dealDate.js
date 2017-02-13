@@ -63,20 +63,6 @@ class DealDate {
     wait_seconds(senconds) {
         return new Promise(resolve => setTimeout(resolve, senconds * 1000));
     }
-    escapeHtml(html) {
-        let reg = />(.+)</;
-        let text = reg.exec(html)[1];
-        text = text.replace("&#xf64d;", "0");
-        text = text.replace("&#xea88;", "1");
-        text = text.replace("&#xf8ad;", "2");
-        text = text.replace("&#xf4f1;", "3");
-        text = text.replace("&#xe635;", "4");
-        text = text.replace("&#xe753;", "5");
-        text = text.replace("&#xe584;", "6");
-        text = text.replace("&#xe8f3;", "7");
-        text = text.replace("&#xe708;", "8");
-        text = text.replace("&#xe087;", "9");
-    }
 }
 exports.DealDate = DealDate;
 //async test(){

@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const dealDate_1 = require("./util/dealDate");
 const cheerio = require("cheerio");
 const agent = require("superagent");
+const fs = require("fs");
 class MaoYan {
     constructor() {
         this.dealDate = new dealDate_1.DealDate("2016-11-07");
@@ -61,18 +62,58 @@ class MaoYan {
     }
     resolveDetail(id) {
         return __awaiter(this, void 0, void 0, function* () {
-            let name, randay, maoyan_score, total_bo, week_bo, day_bo, url, res, $;
+            let html, name, randay, maoyan_score, total_bo, week_bo, day_bo, url, res, $, reg;
             url = this.reptile_url + "movie/" + id + "?_v_=yes";
+            reg = /\/(\w*)\.ttf/;
+            yield this.dealDate.wait_seconds(0.5);
             res = yield agent("GET", url);
-            $ = cheerio.load(res.text);
+            html = yield maoyan.clTts(reg.exec(res.text)[1] + ".ttf", res.text);
+            $ = cheerio.load(html.toString());
             name = $(".info-detail .info-title").text();
             maoyan_score = $("p.score-num ").text();
             console.log(name, maoyan_score);
             return name;
         });
     }
+    anaTts(str, ttf) {
+        let arr = ttf.match(/uni(\w{4})/g);
+        if (arr && arr.length && arr.length === 10) {
+            for (let i = 0; i < arr.length; i++) {
+                str = str.replace(new RegExp(arr[i].toLowerCase().replace('uni', '&#x') + ';', 'g'), i.toString());
+            }
+        }
+        return str;
+    }
+    downFile(filename) {
+        const font_url = 'http://p0.meituan.net/colorstone/' + filename;
+        const stream = fs.createWriteStream("./font/" + filename);
+        const req = agent.get(font_url);
+        let pro = new Promise((resolve, reject) => {
+            req.on("error", err => { console.log("下载出错"); reject(err); })
+                .pipe(stream)
+                .on("close", () => { resolve(true); });
+        });
+        return pro;
+    }
+    clTts(filename, str) {
+        return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+            let pro = new Promise((resolve, reject) => {
+                fs.readFile("./font/" + filename, { encoding: 'utf-8' }, (err, data) => {
+                    data ? resolve(this.anaTts(str, data)) : reject(err);
+                });
+            });
+            pro.then(data => {
+                resolve(data);
+            }, () => __awaiter(this, void 0, void 0, function* () {
+                var a = yield this.downFile(filename);
+                yield this.clTts(filename, str);
+            }));
+        }));
+    }
     test() {
-        this.start();
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.start();
+        });
     }
 }
 var maoyan = new MaoYan();

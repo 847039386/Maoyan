@@ -1,6 +1,7 @@
 import { DealDate } from "./util/dealDate"
 import * as cheerio from 'cheerio';
 import * as agent from 'superagent';
+import * as fs from 'fs';
 
 
 
@@ -52,24 +53,65 @@ class MaoYan {
         }
     }
     async resolveDetail(id : number){
-        let name ,randay ,maoyan_score,total_bo ,week_bo ,day_bo ,url ,res ,$
+        let html ,name ,randay ,maoyan_score,total_bo ,week_bo ,day_bo ,url ,res ,$ ,reg
         url = this.reptile_url + "movie/"+ id +"?_v_=yes"
+        reg = /\/(\w*)\.ttf/;
+        await this.dealDate.wait_seconds(0.5);
         res = await agent("GET",url);
-        $ = cheerio.load(res.text);
+        html = await maoyan.clTts(reg.exec(res.text)[1] + ".ttf",res.text);
+        $ = cheerio.load(html.toString());
         name = $(".info-detail .info-title").text();
         maoyan_score = $("p.score-num ").text();
-        console.log(name,maoyan_score)
+        console.log(name,maoyan_score);
         return name;
     }
 
-    test(){
-        this.start()
+    anaTts(str :string ,ttf :string){
+        let arr = ttf.match(/uni(\w{4})/g);
+        if (arr && arr.length && arr.length === 10) {
+            for (let i = 0; i < arr.length; i++) {
+                str = str.replace(new RegExp(arr[i].toLowerCase().replace('uni', '&#x') + ';', 'g'), i.toString());
+            }
+        }
+        return str;
+    }
+    downFile(filename : string){
+        const font_url = 'http://p0.meituan.net/colorstone/' + filename;
+        const stream = fs.createWriteStream("./font/" + filename);
+        const req = agent.get(font_url);
+        let pro =  new Promise((resolve ,reject) => {
+            req.on("error",err => { console.log("下载出错"); reject(err) })
+                .pipe(stream)
+                .on("close",() => { resolve(true) })
+        })
+        return pro;
+    }
+    clTts(filename :string ,str :string){
+        return new Promise(async (resolve ,reject) => {
+            let  pro =  new Promise((resolve,reject) => {
+                fs.readFile("./font/"+ filename,{ encoding: 'utf-8' } ,(err,data) => {
+                    data ? resolve(this.anaTts(str,data)) : reject(err);
+                })
+            })
+            pro.then(data =>{
+                resolve(data)
+            },async () => {
+                var a = await this.downFile(filename)
+                await this.clTts(filename,str)
+            })
+        })
+    }
+    async test(){
+        await this.start()
     }
 
 }
 
 var maoyan = new MaoYan();
 maoyan.test();
+
+
+
 
 
 

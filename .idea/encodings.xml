@@ -3,5 +3,6 @@
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$/api.ts" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/util/dealDate.ts" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../ss/app.js" charset="UTF-8" />
   </component>
 </project>
