@@ -7,7 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const dealDate_1 = require("./util/dealDate");
+const dealDate_1 = require("./bin/util/dealDate");
 const cheerio = require("cheerio");
 const agent = require("superagent");
 const fs = require("fs");
@@ -55,6 +55,7 @@ class MaoYan {
     }
     resolveList(list) {
         return __awaiter(this, void 0, void 0, function* () {
+            console.log("进入列表页面 开始循环进入内容页面！");
             for (let i = 0; i < list.length; i++) {
                 let content = yield this.resolveDetail(list[i]);
             }
@@ -67,7 +68,9 @@ class MaoYan {
             reg = /\/(\w*)\.ttf/;
             yield this.dealDate.wait_seconds(0.5);
             res = yield agent("GET", url);
+            console.log("加载页面");
             html = yield maoyan.clTts(reg.exec(res.text)[1] + ".ttf", res.text);
+            console.log("转化页面完毕。");
             $ = cheerio.load(html.toString());
             name = $(".info-detail .info-title").text();
             maoyan_score = $("p.score-num ").text();
@@ -86,7 +89,7 @@ class MaoYan {
     }
     downFile(filename) {
         const font_url = 'http://p0.meituan.net/colorstone/' + filename;
-        const stream = fs.createWriteStream("./font/" + filename);
+        const stream = fs.createWriteStream("./bin/font/" + filename);
         const req = agent.get(font_url);
         let pro = new Promise((resolve, reject) => {
             req.on("error", err => { console.log("下载出错"); reject(err); })
@@ -98,14 +101,16 @@ class MaoYan {
     clTts(filename, str) {
         return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
             let pro = new Promise((resolve, reject) => {
-                fs.readFile("./font/" + filename, { encoding: 'utf-8' }, (err, data) => {
-                    data ? resolve(this.anaTts(str, data)) : reject(err);
+                fs.readFile("./bin/font/" + filename, { encoding: 'utf-8' }, (err, data) => {
+                    err ? reject(err) : resolve(this.anaTts(str, data));
                 });
             });
             pro.then(data => {
+                console.log("读取字体库");
                 resolve(data);
             }, () => __awaiter(this, void 0, void 0, function* () {
                 var a = yield this.downFile(filename);
+                console.log("下载完成", a);
                 yield this.clTts(filename, str);
             }));
         }));

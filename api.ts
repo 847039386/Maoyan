@@ -1,4 +1,4 @@
-import { DealDate } from "./util/dealDate"
+import { DealDate } from "./bin/util/dealDate"
 import * as cheerio from 'cheerio';
 import * as agent from 'superagent';
 import * as fs from 'fs';
@@ -47,6 +47,7 @@ class MaoYan {
         return cur_list;
     }
     async resolveList(list : any[]){
+        console.log("进入列表页面 开始循环进入内容页面！")
         for(let i=0; i<list.length; i++){
             let content = await this.resolveDetail(list[i]);
 
@@ -58,7 +59,9 @@ class MaoYan {
         reg = /\/(\w*)\.ttf/;
         await this.dealDate.wait_seconds(0.5);
         res = await agent("GET",url);
+        console.log("加载页面")
         html = await maoyan.clTts(reg.exec(res.text)[1] + ".ttf",res.text);
+        console.log("转化页面完毕。")
         $ = cheerio.load(html.toString());
         name = $(".info-detail .info-title").text();
         maoyan_score = $("p.score-num ").text();
@@ -77,7 +80,7 @@ class MaoYan {
     }
     downFile(filename : string){
         const font_url = 'http://p0.meituan.net/colorstone/' + filename;
-        const stream = fs.createWriteStream("./font/" + filename);
+        const stream = fs.createWriteStream("./bin/font/" + filename);
         const req = agent.get(font_url);
         let pro =  new Promise((resolve ,reject) => {
             req.on("error",err => { console.log("下载出错"); reject(err) })
@@ -89,14 +92,16 @@ class MaoYan {
     clTts(filename :string ,str :string){
         return new Promise(async (resolve ,reject) => {
             let  pro =  new Promise((resolve,reject) => {
-                fs.readFile("./font/"+ filename,{ encoding: 'utf-8' } ,(err,data) => {
-                    data ? resolve(this.anaTts(str,data)) : reject(err);
+                fs.readFile("./bin/font/"+ filename,{ encoding: 'utf-8' } ,(err,data) => {
+                    err ?  reject(err) : resolve(this.anaTts(str,data)) ;
                 })
             })
             pro.then(data =>{
+                console.log("读取字体库")
                 resolve(data)
             },async () => {
                 var a = await this.downFile(filename)
+                console.log("下载完成",a)
                 await this.clTts(filename,str)
             })
         })
