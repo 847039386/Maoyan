@@ -107,7 +107,7 @@ export class MaoYan {
             })
         })
     }
-    updateMovie(name){
+    updateMovie(name :any){
         return Movie.update({ name: name },{  }).exec();
     }
     async test(){
