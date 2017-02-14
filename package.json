@@ -11,9 +11,13 @@
   "dependencies": {
     "@types/async": "^2.0.38",
     "@types/cheerio": "^0.17.31",
+    "@types/commander": "^2.3.31",
+    "@types/mongoose": "^4.7.5",
     "@types/superagent": "^2.0.36",
     "async": "^2.1.4",
     "cheerio": "^0.22.0",
+    "commander": "^2.9.0",
+    "mongoose": "^4.8.2",
     "superagent": "^3.4.1"
   }
 }

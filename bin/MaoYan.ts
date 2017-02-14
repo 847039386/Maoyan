@@ -1,11 +1,15 @@
-import { DealDate } from "./bin/util/dealDate"
+import { DealDate } from "./util/dealDate"
 import * as cheerio from 'cheerio';
 import * as agent from 'superagent';
+import * as mongoose from 'mongoose';
 import * as fs from 'fs';
+import { Movie ,IMovie } from "./models/Movie"
+mongoose.connect('mongodb://127.0.0.1/douban_data')
 
 
 
-class MaoYan {
+
+export class MaoYan {
     private dealDate : DealDate;    //封装的方法。
     private reptile_url : string;   //爬虫网站
     constructor(){
@@ -47,7 +51,6 @@ class MaoYan {
         return cur_list;
     }
     async resolveList(list : any[]){
-        console.log("进入列表页面 开始循环进入内容页面！")
         for(let i=0; i<list.length; i++){
             let content = await this.resolveDetail(list[i]);
 
@@ -59,9 +62,7 @@ class MaoYan {
         reg = /\/(\w*)\.ttf/;
         await this.dealDate.wait_seconds(0.5);
         res = await agent("GET",url);
-        console.log("加载页面")
-        html = await maoyan.clTts(reg.exec(res.text)[1] + ".ttf",res.text);
-        console.log("转化页面完毕。")
+        html = await this.clTts(reg.exec(res.text)[1] + ".ttf",res.text);
         $ = cheerio.load(html.toString());
         name = $(".info-detail .info-title").text();
         maoyan_score = $("p.score-num ").text();
@@ -97,29 +98,24 @@ class MaoYan {
                 })
             })
             pro.then(data =>{
-                console.log("读取字体库")
                 resolve(data)
             },async () => {
                 await this.downFile(filename)
-                console.log("下载完成 --------------------->>>>>>>>>")
                 fs.readFile("./bin/font/"+ filename,{ encoding: 'utf-8' } ,(err,data) => {
                     resolve(this.anaTts(str,data))
                 })
             })
-
-
-
-
         })
     }
+    updateMovie(name){
+        return Movie.update({ name: name },{  }).exec();
+    }
     async test(){
-        await this.start()
+        await this.start()        //抓取所有电影
     }
 
 }
 
-var maoyan = new MaoYan();
-maoyan.test();
 
 
 
