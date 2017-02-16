@@ -4,6 +4,7 @@ import * as agent from 'superagent';
 import * as mongoose from 'mongoose';
 import * as fs from 'fs';
 import { Movie ,IMovie } from "./models/Movie"
+import { MaoYanData } from "./Interface/IMaoYanData"
 mongoose.connect('mongodb://127.0.0.1/douban_data')
 
 
@@ -29,7 +30,7 @@ export class MaoYan {
     }
     async getListDate(dates : any[]){
         for(let i=0; i<dates.length; i++){
-            await this.dealDate.wait_seconds(5);
+            await this.dealDate.wait_seconds(2);
             let url = this.reptile_url + "?date=" + dates[i];
             let listHtml = await agent("GET",url);
             let list = this.getIDLists(listHtml)
@@ -56,20 +57,50 @@ export class MaoYan {
 
         }
     }
+
     async resolveDetail(id : number){
-        let html ,name ,randay ,maoyan_score,total_bo ,week_bo ,day_bo ,url ,res ,$ ,reg
+        let html ,name ,url ,res ,$ : any ,reg
         url = this.reptile_url + "movie/"+ id +"?_v_=yes"
         reg = /\/(\w*)\.ttf/;
         await this.dealDate.wait_seconds(0.5);
         res = await agent("GET",url);
         html = await this.clTts(reg.exec(res.text)[1] + ".ttf",res.text);
         $ = cheerio.load(html.toString());
-        name = $(".info-detail .info-title").text();
-        maoyan_score = $("p.score-num ").text();
-        console.log(name,maoyan_score);
-        return name;
-    }
 
+        let maoyan_data : MaoYanData = new MaoYanData()
+        maoyan_data.id = id;
+        maoyan_data.name = $(".info-detail .info-title").text();
+        maoyan_data.score =  this.deleteSpace($(".info-score .left p.score-num ").text());
+        maoyan_data.z_score = this.deleteSpace($(".info-score .right p.score-num ").text())  || "暂无" ;
+       $(".box-summary .box-detail").each(( idx : number ,ele :any) => {
+           let piaofang = this.deleteSpace($(ele).text())
+           switch (idx){
+               case 0 :
+                   maoyan_data.total_bo = piaofang
+                   break;
+               case 1 :
+                   maoyan_data.week_bo = piaofang
+                   break;
+               case 2 :
+                   maoyan_data.day_bo = piaofang
+                   break;
+           }
+       })
+        this.debug(maoyan_data)
+    }
+    debug(my : MaoYanData){
+        console.log("编号：" + my.id)
+        console.log("名字：" + my.name)
+        console.log("观众：" + my.score)
+        console.log("专家：" + my.z_score)
+        console.log("累计：" + my.total_bo)
+        console.log("首周：" + my.week_bo)
+        console.log("首日：" + my.day_bo)
+        console.log("----------------------------------------------------")
+    }
+    deleteSpace(str : any) : any {
+        return str.replace(/(^\s+)|(\s+$)/g, "")
+    }
     anaTts(str :string ,ttf :string){
         let arr = ttf.match(/uni(\w{4})/g);
         if (arr && arr.length && arr.length === 10) {
@@ -108,12 +139,17 @@ export class MaoYan {
         })
     }
     updateMovie(name :any){
-        return Movie.update({ name: name },{  }).exec();
+       return new Promise((resolve ,reject) => {
+           Movie.find({ name : name}).exec((err,data : IMovie[]) => {
+               if(data.length == 1 ){
+                   Movie.findByIdAndUpdate(data[0]._id,{ }).exec()
+               }
+           })
+       })
     }
     async test(){
         await this.start()        //抓取所有电影
     }
-
 }
 
 

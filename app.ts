@@ -9,8 +9,5 @@ var api = new MaoYan();
 
 program
     .version('0.0.1')
-
-
-    .option('-a, --all', '抓取所有电影', api.updateMovie)
-
+    .option('-a, --all', '抓取所有电影', api.test())
     .parse(process.argv);
