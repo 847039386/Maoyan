@@ -45,7 +45,8 @@ export class DealDate {
     dealtDays(year :number ,month : number ,start :number ,end :number){
         let days :string[] = [];
         for(let i=start;i<= end;i++){
-            days.push(year + "-" + month + "-" + i)
+            let d : any = i < 10 ? "0" + i : i
+            days.push(year + "-" + month + "-" + d)
         }
         return days
     }
@@ -69,11 +70,5 @@ export class DealDate {
 
 }
 
-//async test(){
-//    this.getDaysData(this.start_date);
-//    for(var i=0;i<30;i++){
-//        await this.wait_seconds(2);
-//        this.changeTime(this.cur_reptile_dates)
-//    }
-//}
+
 
