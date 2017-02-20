@@ -7,6 +7,8 @@ import { Movie ,IMovie ,BoxOffice  } from "./models/index"
 import { MaoYanData } from "./Interface/IMaoYanData"
 import { MYOffice } from "./Interface/IMYOffice"
 
+const schedule = require('node-schedule');
+
 
 
 
@@ -21,18 +23,18 @@ export class MaoYan {
         this.maoyan_detail_list = [];
     }
     async start(){
-    this.mz_Util.getDaysData();
-    await this.getListDate(this.mz_Util.cur_reptile_dates.currentDates)
-    //以下循环 ，暂且搁置  华丽分割线 ---------------------------------------------------------
-    this.mz_Util.changeTime();
-    let over = this.mz_Util.isOver();
-    if(over){
-        await this.start();
-    }else{
-        //为了优化数据减少重复入库。。所以当时间走到今日的时候。爬虫爬的的年份停止，爬虫所爬取的list页面结束。。将剩余的文章页的内容爬入数据库。
-        await this.resolveListToDetail(this.maoyan_detail_list);
-    }
-    console.log("爬虫程序，已爬得该网站上的所有数据，本程序将自动在每天的00：00进行对网站的跟踪爬虫。")
+        this.mz_Util.getDaysData();
+        await this.getListDate(this.mz_Util.cur_reptile_dates.currentDates)
+        //以下循环 ，暂且搁置  华丽分割线 ---------------------------------------------------------
+        this.mz_Util.changeTime();
+        let over = this.mz_Util.isOver();
+        if(over){
+            await this.start();
+        }else{
+            //为了优化数据减少重复入库。。所以当时间走到今日的时候。爬虫爬的的年份停止，爬虫所爬取的list页面结束。。将剩余的文章页的内容爬入数据库。
+            await this.resolveListToDetail(this.maoyan_detail_list);
+        }
+        console.log("爬虫程序，已爬得该网站上的所有数据，本程序将自动在每天的00：00进行对网站的跟踪爬虫。")
 
 
 
@@ -57,14 +59,18 @@ export class MaoYan {
            await this.resolveDetail(list[i]);        //处理内容页
         }
     }
-    async resolveList(date :string) {
+    async resolveList(date :string ,necn? : boolean) {
         this.debug_Date(date)                            //debug --- 输出当前时间
         let html = await this.getHtmlList(date)         //获取选定时间的列表Html
         let mos = await this.listDetail(date,html)      //获取list的爬虫数据 ，这是一个数组，有爬虫的所有数据
-        await this.saveBoxOffices(mos)                   //列表数据入库。
+        await this.saveBoxOffices(mos,necn)                   //列表数据入库。
         let list = this.getIDLists(mos)                 //利用正则匹配每个电影的编号。这是一个数组，只有id的数组
         this.sortDetailList(list)                       //整理 电影编号。。将重复的电影去除。。并存放在该对象的属性里。
-        await this.madeDetailList(100)                     //循环存储电影属性中所有电影，并到每个页面拿到数据，并且做存库操作。他是一个void类型的方法。
+        if(necn){
+            await this.resolveListToDetail(list);       //直接循环本页数据
+        }else{
+            await this.madeDetailList(100)                     //循环存储电影属性中所有电影，并到每个页面拿到数据，并且做存库操作。他是一个void类型的方法。
+        }
     }
     sortDetailList(arr : any []){
         let _this = this;
@@ -220,10 +226,10 @@ export class MaoYan {
            })
        })
     }
-    saveBoxOffice(moc : MYOffice) : Promise<any>{
+    saveBoxOffice(moc : MYOffice,up? :boolean) : Promise<any>{
         return new Promise( (res,rej) => {
-            BoxOffice.find({ id : moc.id ,box_date : moc.box_date }).exec(function(err,bofs){
-                if(bofs.length == 0){
+            BoxOffice.findOne({ id : moc.id ,box_date : moc.box_date }).exec(function(err,bofs){
+                if(!bofs){
                     let ibo = new BoxOffice();
                     ibo.id = moc.id;
                     ibo.name = moc.name;
@@ -238,24 +244,58 @@ export class MaoYan {
                         res()
                     });
                 }else{
-                    console.log("编号："+ moc.id +"-- 名称："+ moc.name +"        --------已重复")
-                    res()
+                    if(up){
+                        BoxOffice.findByIdAndUpdate(bofs._id,{
+                            film_realTime : moc.film_realTime,
+                            film_zb :moc.film_zb,
+                            paipian_zb :moc.paipian_zb,
+                            attendance : moc.attendance
+                        }).exec(()=>{
+                            console.log("编号："+ moc.id +"-- 名称："+ moc.name +"        --------已重复，更新数据")
+                            res()
+                        })
+                    }else{
+                        console.log("编号："+ moc.id +"-- 名称："+ moc.name +"        --------已重复")
+                        res()
+                    }
+
                 }
             })
         })
     }
-    async saveBoxOffices(mocs : MYOffice[]){
+    async saveBoxOffices(mocs : MYOffice[],up? :boolean){
         for(let i = 0; i < mocs.length; i++){
             await this.mz_Util.wait_seconds(0.5)
-            await this.saveBoxOffice(mocs[i])
+            await this.saveBoxOffice(mocs[i],up)
         }
     }
-
-
-
-    async test(){
-        await this.start()        //抓取所有电影
+    //爬取今天的电影。
+    async repltileToday(){
+        let today = new Date();
+        let y_today :any = today.getFullYear();
+        let m_today :any = today.getMonth();
+        let d_today :any = today.getDate();
+        d_today = d_today < 10 ? "0" + d_today : d_today;
+        let date = y_today + "-" + (m_today + 1)  + "-" + d_today;
+        await this.resolveList(date,true);
+        console.log(date + "---数据爬取完毕")
+        console.log("----------------------------------------------------")
     }
+    //爬取日期需要的所有电影
+    async reptileAll(){
+        await this.start()        //抓取所有电影
+        await this.scheduleReptile()    //抓取完毕之后开启定时任务。
+    }
+    //定时任务爬取每天电影
+    async scheduleReptile(){
+        console.log("开启定时任务")
+        var rule = new schedule.RecurrenceRule();
+        rule.minute = 40;
+        var j = schedule.scheduleJob(rule,async () => {
+            await this.repltileToday()
+        });
+    }
+
 }
 
 

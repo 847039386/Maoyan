@@ -69,7 +69,6 @@ export class Util {
     uniqueArray(arr : any []) {
             var tmp : any [] = [];
             for(var i in arr){
-        //该元素在tmp内部不存在才允许追加
                 if(tmp.indexOf(arr[i])==-1){
                     tmp.push(arr[i]);
                 }
