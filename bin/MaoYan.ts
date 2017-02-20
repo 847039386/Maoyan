@@ -217,7 +217,7 @@ export class MaoYan {
        return new Promise((resolve ,reject) => {
            Movie.find({ name : name}).exec((err,data : IMovie[]) => {
                if(data.length == 1 ){
-                   Movie.findByIdAndUpdate(data[0]._id,{ maoyan : maoyan_data}).exec(function(){
+                   Movie.findByIdAndUpdate(data[0]._id,{ maoyan : maoyan_data }).exec(function(){
                        resolve();
                    })
                }else{
@@ -291,7 +291,7 @@ export class MaoYan {
         console.log("开启定时任务")
         var rule = new schedule.RecurrenceRule();
         rule.minute = 40;
-        var j = schedule.scheduleJob(rule,async () => {
+        schedule.scheduleJob(rule,async () => {
             await this.repltileToday()
         });
     }
