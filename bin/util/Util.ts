@@ -2,7 +2,7 @@ import { ReptileDates }  from "../Interface/IReptileDates"
 
 
 
-export class DealDate {
+export class Util {
     public start_date :string;      //开始时间
     public cur_reptile_dates : ReptileDates ;  //当前正在爬取该日期里的所有数据
     constructor(date : string){
@@ -59,13 +59,24 @@ export class DealDate {
         }else{
             o_date_m += 1;
         }
-        let c_date = o_date_y + "-" + o_date_m
+        let c_date = o_date_y + "-" + o_date_m;
         this.start_date = c_date;
         this.getDaysData()
     }
     wait_seconds(senconds: number) {
         return new Promise(resolve => setTimeout(resolve, senconds * 1000));
     }
+    uniqueArray(arr : any []) {
+            var tmp : any [] = [];
+            for(var i in arr){
+        //该元素在tmp内部不存在才允许追加
+                if(tmp.indexOf(arr[i])==-1){
+                    tmp.push(arr[i]);
+                }
+            }
+            return tmp;
+    }
+
 
 
 }

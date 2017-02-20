@@ -38,7 +38,16 @@ interface IMovieModel {
     ranking: number;//不存入数据库
     increase_rate_discover_pass_hour:string;//不存入数据库
     sub_score:number;//不存入数据库
-    maoyan :{ maoyan_score :number }
+    maoyan : {
+        id : number,    //编号
+        name : string,  //姓名
+        score : string,   //观众评分
+        z_score : string,    //专家评分
+        total_bo : string,  //累计票房
+        week_bo : string,    //首周票房
+        day_bo  :string     //首日票房
+
+    }
 }
 export interface IMovie extends IMovieModel, mongoose.Document { }
 
@@ -81,8 +90,18 @@ const MovieSchema = new mongoose.Schema({
         score: Number,
         rate_count: Number
     }],
-    maoyan : { maoyan_score : Number }     //猫眼分数
+    maoyan : {
+        id : Number,    //编号
+        name : String,  //姓名
+        score : String,   //观众评分
+        z_score : String,    //专家评分
+        total_bo : String,  //累计票房
+        week_bo : String,    //首周票房
+        day_bo  :String     //首日票房
+
+    }
 });
 //MovieSchema.virtual('ranking')
 MovieSchema.index({ douban_id: 1 });
 export const Movie = mongoose.model<IMovie>("Movie", MovieSchema);
+

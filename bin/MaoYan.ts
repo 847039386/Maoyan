@@ -1,4 +1,4 @@
-import { DealDate } from "./util/dealDate"
+import { Util } from "./util/Util"
 import * as cheerio from 'cheerio';
 import * as agent from 'superagent';
 
@@ -12,21 +12,30 @@ import { MYOffice } from "./Interface/IMYOffice"
 
 
 export class MaoYan {
-    private dealDate : DealDate;    //封装的方法。
+    private mz_Util : Util;    //封装的方法。
     private reptile_url : string;   //爬虫网站
+    private maoyan_detail_list : any [];
     constructor(){
-        this.dealDate = new DealDate("2016-11-07");
+        this.mz_Util = new Util("2017-2-17");
         this.reptile_url = "http://piaofang.maoyan.com/";
+        this.maoyan_detail_list = [];
     }
     async start(){
-        this.dealDate.getDaysData();
-        await this.getListDate(this.dealDate.cur_reptile_dates.currentDates)
-        //以下循环 ，暂且搁置  华丽分割线 ---------------------------------------------------------
-        this.dealDate.changeTime();
-        let over = this.dealDate.isOver();
-        if(over){
-            await this.start();
-        }
+    this.mz_Util.getDaysData();
+    await this.getListDate(this.mz_Util.cur_reptile_dates.currentDates)
+    //以下循环 ，暂且搁置  华丽分割线 ---------------------------------------------------------
+    this.mz_Util.changeTime();
+    let over = this.mz_Util.isOver();
+    if(over){
+        await this.start();
+    }else{
+        //为了优化数据减少重复入库。。所以当时间走到今日的时候。爬虫爬的的年份停止，爬虫所爬取的list页面结束。。将剩余的文章页的内容爬入数据库。
+        await this.resolveListToDetail(this.maoyan_detail_list);
+    }
+    console.log("爬虫程序，已爬得该网站上的所有数据，本程序将自动在每天的00：00进行对网站的跟踪爬虫。")
+
+
+
 
     }
     async getListDate(dates : any[]){
@@ -42,6 +51,8 @@ export class MaoYan {
         return cur_list;
     }
     async resolveListToDetail(list : any[])  {
+        console.log("---------------------华丽的分割线--------------------")
+        console.log("以下将爬取内容页，即将修改Movie表！")
         for(let i=0; i<list.length; i++){
            await this.resolveDetail(list[i]);        //处理内容页
         }
@@ -50,9 +61,25 @@ export class MaoYan {
         this.debug_Date(date)                            //debug --- 输出当前时间
         let html = await this.getHtmlList(date)         //获取选定时间的列表Html
         let mos = await this.listDetail(date,html)      //获取list的爬虫数据 ，这是一个数组，有爬虫的所有数据
-        await this.saveBoxOffices(mos)                         //列表数据入库。
+        await this.saveBoxOffices(mos)                   //列表数据入库。
         let list = this.getIDLists(mos)                 //利用正则匹配每个电影的编号。这是一个数组，只有id的数组
-        await this.resolveListToDetail(list)            //循环列表页的所有电影，并到每个页面拿到数据，并且做存库操作。他是一个void类型的方法。
+        this.sortDetailList(list)                       //整理 电影编号。。将重复的电影去除。。并存放在该对象的属性里。
+        await this.madeDetailList(100)                     //循环存储电影属性中所有电影，并到每个页面拿到数据，并且做存库操作。他是一个void类型的方法。
+    }
+    sortDetailList(arr : any []){
+        let _this = this;
+        let arr_concat : any [] = [];
+        arr_concat = arr.concat(_this.maoyan_detail_list);
+        this.maoyan_detail_list = this.mz_Util.uniqueArray(arr_concat);
+    }
+    async madeDetailList(condition : number){
+        console.log("当前存放电影数组的条数：---------------"+this.maoyan_detail_list.length)
+        if(this.maoyan_detail_list.length > condition){
+            await this.resolveListToDetail(this.maoyan_detail_list);
+            this.maoyan_detail_list = [];
+        }else{
+            console.log("当前重复电影并没有到达"+ condition +"条，将不用存放到数据库。")
+        }
     }
     async resolveDetail(id : number)  {
         let html = await this.getHtmlDetail(id)                                 //获取内容页的Html并转义。
@@ -83,7 +110,7 @@ export class MaoYan {
         return new Promise(resolve =>{ resolve(mos) });
     }
     async getHtmlList(date : string) : Promise<any> {
-        await this.dealDate.wait_seconds(2);
+        await this.mz_Util.wait_seconds(2);
         let url = this.reptile_url + "?date=" + date;
         let html = await agent("GET",url);
         return new Promise((resolve ,reject) => {
@@ -94,7 +121,7 @@ export class MaoYan {
         let html :any ,url ,res,reg;
         url = this.reptile_url + "movie/"+ id +"?_v_=yes"
         reg = /\/(\w*)\.ttf/;
-        await this.dealDate.wait_seconds(0.5);
+        await this.mz_Util.wait_seconds(0.5);
         res = await agent("GET",url);
         html = await this.clTts(reg.exec(res.text)[1] + ".ttf",res.text);
         return new Promise((resolve ,reject) => {
@@ -219,7 +246,7 @@ export class MaoYan {
     }
     async saveBoxOffices(mocs : MYOffice[]){
         for(let i = 0; i < mocs.length; i++){
-            await this.dealDate.wait_seconds(0.5)
+            await this.mz_Util.wait_seconds(0.5)
             await this.saveBoxOffice(mocs[i])
         }
     }

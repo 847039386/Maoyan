@@ -2,3 +2,4 @@
 out
 /bin/font/*.ttf
 /.idea/
+.test.js
