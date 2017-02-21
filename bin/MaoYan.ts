@@ -3,7 +3,7 @@ import * as cheerio from 'cheerio';
 import * as agent from 'superagent';
 
 import * as fs from 'fs';
-import { Movie ,IMovie ,BoxOffice  } from "./models/index"
+import { CatEye ,BoxOffice  } from "./models/index"
 import { MaoYanData } from "./Interface/IMaoYanData"
 import { MYOffice } from "./Interface/IMYOffice"
 
@@ -17,10 +17,12 @@ export class MaoYan {
     private mz_Util : Util;    //封装的方法。
     private reptile_url : string;   //爬虫网站
     private maoyan_detail_list : any [];
+    private cache : number;
     constructor(start : string){
         this.mz_Util = new Util(start);
         this.reptile_url = "http://piaofang.maoyan.com/";
         this.maoyan_detail_list = [];
+        this.cache = 10;
     }
     async start(){
         this.mz_Util.getDaysData();
@@ -35,10 +37,6 @@ export class MaoYan {
             await this.resolveListToDetail(this.maoyan_detail_list);
         }
         console.log("爬虫程序，已爬得该网站上的所有数据，本程序将自动在每天的00：00进行对网站的跟踪爬虫。")
-
-
-
-
     }
     async getListDate(dates : any[]){
         for(let i=0; i<dates.length; i++){
@@ -54,7 +52,7 @@ export class MaoYan {
     }
     async resolveListToDetail(list : any[])  {
         console.log("---------------------华丽的分割线--------------------")
-        console.log("以下将爬取内容页，即将修改Movie表！")
+        console.log("以下将爬取内容页，即将添加CatEyeMovie表！")
         for(let i=0; i<list.length; i++){
            await this.resolveDetail(list[i]);        //处理内容页
         }
@@ -69,7 +67,7 @@ export class MaoYan {
         if(necn){
             await this.resolveListToDetail(list);       //直接循环本页数据
         }else{
-            await this.madeDetailList(100)                     //循环存储电影属性中所有电影，并到每个页面拿到数据，并且做存库操作。他是一个void类型的方法。
+            await this.madeDetailList()                     //循环存储电影属性中所有电影，并到每个页面拿到数据，并且做存库操作。他是一个void类型的方法。
         }
     }
     sortDetailList(arr : any []){
@@ -78,20 +76,20 @@ export class MaoYan {
         arr_concat = arr.concat(_this.maoyan_detail_list);
         this.maoyan_detail_list = this.mz_Util.uniqueArray(arr_concat);
     }
-    async madeDetailList(condition : number){
+    async madeDetailList(){
         console.log("当前存放电影数组的条数：---------------"+this.maoyan_detail_list.length)
-        if(this.maoyan_detail_list.length > condition){
+        if(this.maoyan_detail_list.length > this.cache){
             await this.resolveListToDetail(this.maoyan_detail_list);
             this.maoyan_detail_list = [];
         }else{
-            console.log("当前重复电影并没有到达"+ condition +"条，将不用存放到数据库。")
+            console.log("当前重复电影并没有到达"+ this.cache +"条，将不用存放到数据库。")
         }
     }
     async resolveDetail(id : number)  {
         let html = await this.getHtmlDetail(id)                                 //获取内容页的Html并转义。
         let maoyan_data : MaoYanData =  this.getMaoyanDetail(id,html);         //获取内容页的数据。
         this.debug_MaoyanData(maoyan_data);                                    //debug ----- 输出数据
-        this.updateMovie(maoyan_data.name,maoyan_data);                       //入库并提示。
+        this.saveCatEyeMovie(maoyan_data);                       //入库并提示。
     }
 
 
@@ -215,18 +213,27 @@ export class MaoYan {
             })
         })
     }
-    updateMovie(name :any ,maoyan_data :MaoYanData) : Promise<any> {
-       let year = parseInt(maoyan_data.release_time.split("-")[0]) || 1;
-       let year1 = year - 1;
+    saveCatEyeMovie(maoyan_data :MaoYanData) : Promise<any> {
        return new Promise((resolve ,reject) => {
-           Movie.find({ name : name ,year:{ "$in" : [ year,year1] } }).exec((err,data : IMovie[]) => {
-               if(data.length == 1 ){
-                   Movie.findByIdAndUpdate(data[0]._id,{ maoyan : maoyan_data }).exec(function(){
-                       resolve();
-                   })
-               }else{
-                   resolve()
-               }
+           CatEye.findOne({ id : maoyan_data.id }).exec(function(err :any,data :any){
+                if(!data){
+                    let cat = new CatEye();
+                    cat.id = maoyan_data.id;
+                    cat.name = maoyan_data.name;
+                    cat.score = maoyan_data.score;
+                    cat.z_score = maoyan_data.z_score;
+                    cat.total_bo = maoyan_data.total_bo;
+                    cat.week_bo = maoyan_data.week_bo;
+                    cat.day_bo  = maoyan_data.day_bo;
+                    cat.release_time = maoyan_data.release_time;
+                    cat.save(function(err,data){
+                        resolve();
+                    })
+                }else{
+                    CatEye.findByIdAndUpdate(data._id,maoyan_data,function(err:any,data:any){
+                        resolve()
+                    })
+                }
            })
        })
     }
@@ -309,6 +316,12 @@ export class MaoYan {
             console.log("")
             console.log("不合格的语法。例如：<--  node out/app -y 2017-01-01  -->" )
         }
+        process.exit();
+    }
+    async getId(id :number){
+        await this.resolveDetail(id)
+        console.log("----------------------------------------------------")
+        process.exit();
     }
     test(){
         console.log("这是测试代码")
