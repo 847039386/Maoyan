@@ -216,8 +216,10 @@ export class MaoYan {
         })
     }
     updateMovie(name :any ,maoyan_data :MaoYanData) : Promise<any> {
+       let year = parseInt(maoyan_data.release_time.split("-")[0]) || 1;
+       let year1 = year - 1;
        return new Promise((resolve ,reject) => {
-           Movie.find({ name : name}).exec((err,data : IMovie[]) => {
+           Movie.find({ name : name ,year:{ "$in" : [ year,year1] } }).exec((err,data : IMovie[]) => {
                if(data.length == 1 ){
                    Movie.findByIdAndUpdate(data[0]._id,{ maoyan : maoyan_data }).exec(function(){
                        resolve();
@@ -297,6 +299,26 @@ export class MaoYan {
             await this.repltileToday()
         });
     }
+    async getYear(date : string){
+        let reg = /^\d{4}-[0-1][0-9]-[0-3][0-9]$/
+        if(reg.test(date)){
+            await this.resolveList(date,true);
+            console.log("---------------------"+date+"---------------------------")
+            console.log("爬虫完毕")
+        }else{
+            console.log("")
+            console.log("不合格的语法。例如：<--  node out/app -y 2017-01-01  -->" )
+        }
+    }
+    test(){
+        console.log("这是测试代码")
+    }
+
+
+
+
+
+
 
 }
 
