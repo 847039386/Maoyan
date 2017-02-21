@@ -44,9 +44,10 @@ export class Util {
     }
     dealtDays(year :number ,month : number ,start :number ,end :number){
         let days :string[] = [];
+        let x_month : any = month < 10 ? "0" + month : month
         for(let i=start;i<= end;i++){
             let d : any = i < 10 ? "0" + i : i
-            days.push(year + "-" + month + "-" + d)
+            days.push(year + "-" + x_month + "-" + d)
         }
         return days
     }

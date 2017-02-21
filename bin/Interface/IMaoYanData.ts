@@ -6,6 +6,7 @@ interface IMaoYanData {
     total_bo : any   //累计票房
     week_bo : any    //首周票房
     day_bo :any  //首日票房
+    release_time : any; //上映时间
 }
 
 export class MaoYanData implements IMaoYanData {
@@ -16,6 +17,7 @@ export class MaoYanData implements IMaoYanData {
     total_bo : any   //累计票房
     week_bo : any    //首周票房
     day_bo :any  //首日票房
+    release_time : any; //上映时间
 }
 
 

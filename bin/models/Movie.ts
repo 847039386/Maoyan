@@ -46,7 +46,7 @@ interface IMovieModel {
         total_bo : string,  //累计票房
         week_bo : string,    //首周票房
         day_bo  :string     //首日票房
-
+        release_time :string //上映时间
     }
 }
 export interface IMovie extends IMovieModel, mongoose.Document { }
@@ -97,7 +97,8 @@ const MovieSchema = new mongoose.Schema({
         z_score : String,    //专家评分
         total_bo : String,  //累计票房
         week_bo : String,    //首周票房
-        day_bo  :String     //首日票房
+        day_bo  :String ,    //首日票房
+        release_time : String //上映时间
 
     }
 });

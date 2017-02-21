@@ -1,7 +1,7 @@
 import { MaoYan } from './bin/MaoYan';
 import program = require('commander');
 
-var api = new MaoYan();
+var api = new MaoYan("2011-01-01");
 export class App{
     reptileAll(){
         api.reptileAll();

@@ -17,8 +17,8 @@ export class MaoYan {
     private mz_Util : Util;    //封装的方法。
     private reptile_url : string;   //爬虫网站
     private maoyan_detail_list : any [];
-    constructor(){
-        this.mz_Util = new Util("2017-2-17");
+    constructor(start : string){
+        this.mz_Util = new Util(start);
         this.reptile_url = "http://piaofang.maoyan.com/";
         this.maoyan_detail_list = [];
     }
@@ -142,6 +142,7 @@ export class MaoYan {
         maoyan_data.name = $(".info-detail .info-title").text();
         maoyan_data.score =  this.deleteSpace($(".info-score .left p.score-num ").text());
         maoyan_data.z_score = this.deleteSpace($(".info-score .right p.score-num ").text())  || "暂无" ;
+        maoyan_data.release_time = ($(".info-detail .info-release").text()).match(/\d.*\d/)[0];
         $(".box-summary .box-detail").each(( idx : number ,ele :any) => {
             let piaofang = this.deleteSpace($(ele).text())
             switch (idx){
@@ -167,6 +168,7 @@ export class MaoYan {
         console.log("累计：" + my.total_bo)
         console.log("首周：" + my.week_bo)
         console.log("首日：" + my.day_bo)
+        console.log("上映时间：" + my.release_time)
     }
     debug_Date(date : string) : void {
         console.log("----------------------------------------------------")
