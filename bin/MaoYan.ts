@@ -9,10 +9,6 @@ import { MYOffice } from "./Interface/IMYOffice"
 
 const schedule = require('node-schedule');
 
-
-
-
-
 export class MaoYan {
     private mz_Util : Util;    //封装的方法。
     private reptile_url : string;   //爬虫网站
@@ -22,7 +18,7 @@ export class MaoYan {
         this.mz_Util = new Util(start);
         this.reptile_url = "http://piaofang.maoyan.com/";
         this.maoyan_detail_list = [];
-        this.cache = 10;
+        this.cache = 100;
     }
     async start(){
         this.mz_Util.getDaysData();
@@ -60,14 +56,16 @@ export class MaoYan {
     async resolveList(date :string ,necn? : boolean) {
         this.debug_Date(date)                            //debug --- 输出当前时间
         let html = await this.getHtmlList(date)         //获取选定时间的列表Html
-        let mos = await this.listDetail(date,html)      //获取list的爬虫数据 ，这是一个数组，有爬虫的所有数据
-        await this.saveBoxOffices(mos,necn)                   //列表数据入库。
-        let list = this.getIDLists(mos)                 //利用正则匹配每个电影的编号。这是一个数组，只有id的数组
-        this.sortDetailList(list)                       //整理 电影编号。。将重复的电影去除。。并存放在该对象的属性里。
-        if(necn){
-            await this.resolveListToDetail(list);       //直接循环本页数据
-        }else{
-            await this.madeDetailList()                     //循环存储电影属性中所有电影，并到每个页面拿到数据，并且做存库操作。他是一个void类型的方法。
+        if(html){                                       //当页面没有出错的时候
+            let mos = await this.listDetail(date,html)      //获取list的爬虫数据 ，这是一个数组，有爬虫的所有数据
+            await this.saveBoxOffices(mos,necn)                   //列表数据入库。
+            let list = this.getIDLists(mos)                 //利用正则匹配每个电影的编号。这是一个数组，只有id的数组
+            this.sortDetailList(list)                       //整理 电影编号。。将重复的电影去除。。并存放在该对象的属性里。
+            if(necn){
+                await this.resolveListToDetail(list);       //直接循环本页数据
+            }else{
+                await this.madeDetailList()                     //循环存储电影属性中所有电影，并到每个页面拿到数据，并且做存库操作。他是一个void类型的方法。
+            }
         }
     }
     sortDetailList(arr : any []){
@@ -86,10 +84,13 @@ export class MaoYan {
         }
     }
     async resolveDetail(id : number)  {
+
         let html = await this.getHtmlDetail(id)                                 //获取内容页的Html并转义。
-        let maoyan_data : MaoYanData =  this.getMaoyanDetail(id,html);         //获取内容页的数据。
-        this.debug_MaoyanData(maoyan_data);                                    //debug ----- 输出数据
-        this.saveCatEyeMovie(maoyan_data);                       //入库并提示。
+        if(html){                                                               //当页面没有出错的时候
+            let maoyan_data : MaoYanData =  this.getMaoyanDetail(id,html);         //获取内容页的数据。
+            this.debug_MaoyanData(maoyan_data);                                    //debug ----- 输出数据
+            this.saveCatEyeMovie(maoyan_data);                       //入库并提示。
+        }
     }
 
 
@@ -116,18 +117,26 @@ export class MaoYan {
     async getHtmlList(date : string) : Promise<any> {
         await this.mz_Util.wait_seconds(2);
         let url = this.reptile_url + "?date=" + date;
-        let html = await agent("GET",url);
+        let html :any = await this.mz_Util.getAgent(url);
         return new Promise((resolve ,reject) => {
-            resolve(html.text)
+            if(html){
+                resolve(html.text)
+            }else{
+                resolve(null)
+            }
         })
     }
     async getHtmlDetail(id :number) : Promise<any> {
-        let html :any ,url ,res,reg;
+        let html :any ,url ,res :any,reg;
         url = this.reptile_url + "movie/"+ id +"?_v_=yes"
         reg = /\/(\w*)\.ttf/;
         await this.mz_Util.wait_seconds(0.5);
-        res = await agent("GET",url);
-        html = await this.clTts(reg.exec(res.text)[1] + ".ttf",res.text);
+        res = await this.mz_Util.getAgent(url);
+        if(res){
+            html = await this.clTts(reg.exec(res.text)[1] + ".ttf",res.text);
+        }else{
+            html = null;
+        }
         return new Promise((resolve ,reject) => {
             resolve(html)
         })
@@ -139,19 +148,21 @@ export class MaoYan {
         maoyan_data.id = id;
         maoyan_data.name = $(".info-detail .info-title").text();
         maoyan_data.score =  this.deleteSpace($(".info-score .left p.score-num ").text());
-        maoyan_data.z_score = this.deleteSpace($(".info-score .right p.score-num ").text())  || "暂无" ;
+        maoyan_data.z_score = this.deleteSpace($(".info-score .right p.score-num ").text()) ;
         maoyan_data.release_time = ($(".info-detail .info-release").text()).match(/\d.*\d/)[0];
         $(".box-summary .box-detail").each(( idx : number ,ele :any) => {
-            let piaofang = this.deleteSpace($(ele).text())
+            let piaofang = this.deleteSpace($(ele).find(".cs").text())
+            let unit = $(ele).find(".box-unit").text();
+            let result = piaofang * (unit ? 10000 : 1)
             switch (idx){
                 case 0 :
-                    maoyan_data.total_bo = piaofang
+                    maoyan_data.total_bo = result;
                     break;
                 case 1 :
-                    maoyan_data.week_bo = piaofang
+                    maoyan_data.week_bo = result;
                     break;
                 case 2 :
-                    maoyan_data.day_bo = piaofang
+                    maoyan_data.day_bo = result;
                     break;
             }
         })
@@ -174,7 +185,9 @@ export class MaoYan {
         console.log("----------------------------------------------------")
     }
     deleteSpace(str : any) : any {
-        return str.replace(/(^\s+)|(\s+$)/g, "")
+        let result = str.replace(/(^\s+)|(\s+$)/g, "")
+        result = parseFloat(result) ? parseFloat(result) : 0
+        return result;
     }
     anaTts(str :string ,ttf :string) : string{
         let arr = ttf.match(/uni(\w{4})/g);

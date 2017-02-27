@@ -1,5 +1,5 @@
 import { ReptileDates }  from "../Interface/IReptileDates"
-
+import * as superAgent from 'superagent';
 
 
 export class Util {
@@ -76,6 +76,18 @@ export class Util {
             }
             return tmp;
     }
+    getAgent(url : string){
+        return new Promise((resolve,reject) => {
+            superAgent("get",url).end((err :any,data :any) => {
+                if(err){
+                    resolve(null)
+                }else{
+                    resolve(data)
+                }
+            })
+        })
+    }
+
 
 
 
