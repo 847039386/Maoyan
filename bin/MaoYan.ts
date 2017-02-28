@@ -315,7 +315,7 @@ export class MaoYan {
     async scheduleReptile(){
         console.log("开启定时任务")
         var rule = new schedule.RecurrenceRule();
-        rule.minute = 40;
+        rule.minute = 30;
         schedule.scheduleJob(rule,async () => {
             await this.repltileToday()
         });
