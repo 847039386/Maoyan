@@ -300,7 +300,8 @@ export class MaoYan {
         let m_today :any = today.getMonth();
         let d_today :any = today.getDate();
         d_today = d_today < 10 ? "0" + d_today : d_today;
-        let date = y_today + "-" + (m_today + 1)  + "-" + d_today;
+        m_today = (m_today + 1) < 10 ? "0" + (m_today + 1) : (m_today + 1);
+    let date = y_today + "-" + m_today  + "-" + d_today;
         await this.resolveList(date,true);
         console.log(date + "---数据爬取完毕")
         console.log("----------------------------------------------------")
@@ -314,7 +315,7 @@ export class MaoYan {
     async scheduleReptile(){
         console.log("开启定时任务")
         var rule = new schedule.RecurrenceRule();
-        rule.minute = 40;
+        rule.minute = 26;
         schedule.scheduleJob(rule,async () => {
             await this.repltileToday()
         });

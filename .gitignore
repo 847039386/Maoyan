@@ -1,5 +1,4 @@
 /node_modules/
-out
 /bin/font/*.ttf
 /.idea/
 .test.js
