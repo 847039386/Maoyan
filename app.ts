@@ -29,7 +29,7 @@ program
     .option('-t, --time', '定时抓取电影', app.scheduleReptile)
     .option('-y, --year <n>', '爬取某年份的电影 参数格式:< 2017-01-01 >', app.getYear)
     .option('-g, --id <n>', '爬取某年份的电影 参数格式', app.getId)
-    .option('-s, --test', '这是一个测试', app.test)
+    .option('-m, --test', '这是一个测试', app.test)
     .parse(process.argv);
 
 

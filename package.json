@@ -14,11 +14,13 @@
     "@types/commander": "^2.3.31",
     "@types/mongoose": "^4.7.5",
     "@types/superagent": "^2.0.36",
-    "async": "^2.1.4",
+    "async": "^2.1.5",
     "cheerio": "^0.22.0",
     "commander": "^2.9.0",
     "mongoose": "^4.8.2",
     "node-schedule": "^1.2.0",
-    "superagent": "^3.4.1"
+    "request": "^2.80.0",
+    "superagent": "^3.4.1",
+    "unzip": "^0.1.11"
   }
 }

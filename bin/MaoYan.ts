@@ -1,4 +1,6 @@
 import { Util } from "./util/Util"
+import { OperationFile } from "./util/OperationFile"
+
 import * as cheerio from 'cheerio';
 import * as agent from 'superagent';
 
@@ -14,8 +16,10 @@ export class MaoYan {
     private reptile_url : string;   //爬虫网站
     private maoyan_detail_list : any [];
     private cache : number;
+    private operationFile : OperationFile;
     constructor(start : string){
         this.mz_Util = new Util(start);
+        this.operationFile = new OperationFile();
         this.reptile_url = "http://piaofang.maoyan.com/";
         this.maoyan_detail_list = [];
         this.cache = 100;
@@ -84,7 +88,6 @@ export class MaoYan {
         }
     }
     async resolveDetail(id : number)  {
-
         let html = await this.getHtmlDetail(id)                                 //获取内容页的Html并转义。
         if(html){                                                               //当页面没有出错的时候
             let maoyan_data : MaoYanData =  this.getMaoyanDetail(id,html);         //获取内容页的数据。
@@ -92,13 +95,55 @@ export class MaoYan {
             this.saveCatEyeMovie(maoyan_data);                       //入库并提示。
         }
     }
-
-
+    plan(html :any) : Promise<any> {
+        return new Promise(async (resolve) => {
+            let result = '';
+            let reg1 = /\/(\w*)\.ttf/;
+            var reg2 = /@font-face{ font-family:"cs";src:url\((.*)\) format\("woff"\);}/;
+            if(reg1.exec(html)){
+                result = await this.planOne(reg1.exec(html)[1] + ".ttf",html);
+            }else{
+                let file = await this.planTwo(html)
+                await this.mz_Util.wait_seconds(2);         //暂时等待两秒，，这是bug暂未解决。zip没有回掉函数
+                result = await this.planOne(file,html);
+                resolve(result);
+            }
+        })
+    }
+    planOne(filename :string ,str :string) : Promise<any> {
+        return new Promise(async (resolve ,reject) => {
+            let  pro =  new Promise((resolve,reject) => {
+                fs.readFile("./bin/font/"+ filename,{ encoding: 'utf-8' } ,(err,data) => {
+                    err ?  resolve(null) : resolve(this.anaTts(str,data)) ;
+                })
+            })
+            pro.then(data =>{
+                resolve(data)
+            },async () => {
+                await this.downFile(filename)
+                fs.readFile("./bin/font/"+ filename,{ encoding: 'utf-8' } ,(err,data) => {
+                    resolve(this.anaTts(str,data))
+                })
+            })
+        })
+    }
+    async planTwo(html :any) : Promise <any>{
+        return new Promise(async (resolve) => {
+            var reg = /@font-face{ font-family:"cs";src:url\((.*)\) format\("woff"\);}/;
+            var font = html.match(reg)
+            var utf8_woff = font[1].split(",")[1]
+            let filename = await this.operationFile.handleHtml(utf8_woff);
+            if(filename){
+                resolve(filename + ".ttf")
+            }
+        })
+    }
     async listDetail(date :string ,html :string) : Promise<any> {
-        let reg = /\/(\w*)\.ttf/;
+        let reg1 = /\/(\w*)\.ttf/;
+        var reg2 = /@font-face{ font-family:"cs";src:url\((.*)\) format\("woff"\);}/;
         let reg_id = /([1-9]\d*\.?\d*)|(0\.\d*[1-9])/
         let mos : MYOffice[] = []
-        html = await this.clTts(reg.exec(html)[1] + ".ttf",html);
+        html = await this.plan(html);
         let $ : any = cheerio.load(html);
         $("#ticket_tbody ul.canTouch").each((idx :number,ele :any) => {
             let myoffice = new MYOffice();
@@ -133,7 +178,7 @@ export class MaoYan {
         await this.mz_Util.wait_seconds(0.5);
         res = await this.mz_Util.getAgent(url);
         if(res){
-            html = await this.clTts(reg.exec(res.text)[1] + ".ttf",res.text);
+            html = await this.plan(res.text);
         }else{
             html = null;
         }
@@ -209,23 +254,7 @@ export class MaoYan {
         })
         return pro;
     }
-    clTts(filename :string ,str :string) : Promise<any> {
-        return new Promise(async (resolve ,reject) => {
-            let  pro =  new Promise((resolve,reject) => {
-                fs.readFile("./bin/font/"+ filename,{ encoding: 'utf-8' } ,(err,data) => {
-                    err ?  reject(err) : resolve(this.anaTts(str,data)) ;
-                })
-            })
-            pro.then(data =>{
-                resolve(data)
-            },async () => {
-                await this.downFile(filename)
-                fs.readFile("./bin/font/"+ filename,{ encoding: 'utf-8' } ,(err,data) => {
-                    resolve(this.anaTts(str,data))
-                })
-            })
-        })
-    }
+
     saveCatEyeMovie(maoyan_data :MaoYanData) : Promise<any> {
        return new Promise((resolve ,reject) => {
            CatEye.findOne({ id : maoyan_data.id }).exec(function(err :any,data :any){
@@ -337,8 +366,9 @@ export class MaoYan {
         console.log("----------------------------------------------------")
         process.exit();
     }
-    test(){
-        console.log("这是测试代码")
+    async test(){
+        await this.repltileToday()
+        process.exit();
     }
 
 
