@@ -78,13 +78,26 @@ export class Util {
     }
     getAgent(url : string){
         return new Promise((resolve,reject) => {
-            superAgent("get",url).end((err :any,data :any) => {
+            superAgent("get",url)
+                .end((err :any,data :any) => {
                 if(err){
                     resolve(null)
                 }else{
                     resolve(data)
                 }
             })
+        })
+    }
+    getAgentList(url : string){
+        return new Promise((resolve,reject) => {
+            superAgent("get",url)
+                .end((err :any,data :any) => {
+                    if(err){
+                        resolve(null)
+                    }else{
+                        resolve(JSON.parse(data.text))
+                    }
+                })
         })
     }
 

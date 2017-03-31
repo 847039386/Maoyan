@@ -138,14 +138,12 @@ export class MaoYan {
             }
         })
     }
-    async listDetail(date :string ,html :string) : Promise<any> {
-        let reg1 = /\/(\w*)\.ttf/;
-        var reg2 = /@font-face{ font-family:"cs";src:url\((.*)\) format\("woff"\);}/;
+    async listDetail(date :string ,html :any) : Promise<any> {
         let reg_id = /([1-9]\d*\.?\d*)|(0\.\d*[1-9])/
         let mos : MYOffice[] = []
-        html = await this.plan(html);
-        let $ : any = cheerio.load(html);
-        $("#ticket_tbody ul.canTouch").each((idx :number,ele :any) => {
+        let $ : any = cheerio.load(html.ticketList);
+        await this.plan(html.nuwaBase64FontsUrl);
+        $("ul.canTouch").each((idx :number,ele :any) => {
             let myoffice = new MYOffice();
             myoffice.box_date = date;
             myoffice.id = $(ele).attr("data-com").match(reg_id)[0];
@@ -161,11 +159,11 @@ export class MaoYan {
     }
     async getHtmlList(date : string) : Promise<any> {
         await this.mz_Util.wait_seconds(2);
-        let url = this.reptile_url + "?date=" + date;
-        let html :any = await this.mz_Util.getAgent(url);
+        let url = this.reptile_url + "dayoffice?date=" + date + "&cnt=10"
+        let html :any = await this.mz_Util.getAgentList(url);
         return new Promise((resolve ,reject) => {
             if(html){
-                resolve(html.text)
+                resolve(html)
             }else{
                 resolve(null)
             }
