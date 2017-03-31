@@ -141,8 +141,8 @@ export class MaoYan {
     async listDetail(date :string ,html :any) : Promise<any> {
         let reg_id = /([1-9]\d*\.?\d*)|(0\.\d*[1-9])/
         let mos : MYOffice[] = []
-        let $ : any = cheerio.load(html.ticketList);
-        await this.plan(html.nuwaBase64FontsUrl);
+        let ahtml =  await this.plan(html.nuwaBase64FontsUrl + html.ticketList);
+        let $ : any = cheerio.load(ahtml);
         $("ul.canTouch").each((idx :number,ele :any) => {
             let myoffice = new MYOffice();
             myoffice.box_date = date;
@@ -152,7 +152,7 @@ export class MaoYan {
             myoffice.film_zb = $(ele).find("li.c3 i.cs").text();
             myoffice.paipian_zb = $(ele).find("li.c4 i.cs").text();
             myoffice.attendance = $(ele).find("li.c5 i.cs").text();
-            myoffice.film_days = $(ele).find("li.c1 em").first().text();
+            myoffice.film_days = $(ele).find("li.c1 br + em").first().text() || "上映首日"
             mos.push(myoffice)
         })
         return new Promise(resolve =>{ resolve(mos) });
