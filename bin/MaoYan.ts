@@ -129,7 +129,7 @@ export class MaoYan {
     }
     async planTwo(html :any) : Promise <any>{
         return new Promise(async (resolve) => {
-            var reg = /@font-face{ font-family:"cs";src:url\((.*)\) format\("woff"\);}/;
+            var reg = /@font-face{font-family:"cs";src:url\((.*)\) format\("woff"\);}/;
             var font = html.match(reg)
             var utf8_woff = font[1].split(",")[1]
             let filename = await this.operationFile.handleHtml(utf8_woff);
@@ -141,7 +141,7 @@ export class MaoYan {
     async listDetail(date :string ,html :any) : Promise<any> {
         let reg_id = /([1-9]\d*\.?\d*)|(0\.\d*[1-9])/
         let mos : MYOffice[] = []
-        let ahtml =  await this.plan(html.nuwaBase64FontsUrl + html.ticketList);
+        let ahtml =  await this.plan(html.fontsUrl + html.ticketList);
         let $ : any = cheerio.load(ahtml);
         $("ul.canTouch").each((idx :number,ele :any) => {
             let myoffice = new MYOffice();
