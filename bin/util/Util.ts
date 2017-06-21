@@ -2,6 +2,7 @@ import { ReptileDates }  from "../Interface/IReptileDates"
 import * as superAgent from 'superagent';
 
 
+
 export class Util {
     public start_date :string;      //开始时间
     public cur_reptile_dates : ReptileDates ;  //当前正在爬取该日期里的所有数据
@@ -91,10 +92,13 @@ export class Util {
     getAgentList(url : string){
         return new Promise((resolve,reject) => {
             superAgent("get",url)
+                .set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.104 Safari/537.36 Core/1.53.2372.400 QQBrowser/9.5.10548.400')
                 .end((err :any,data :any) => {
                     if(err){
                         resolve(null)
                     }else{
+                        console.log(data.text)
+                        console.log(url)
                         resolve(JSON.parse(data.text))
                     }
                 })
